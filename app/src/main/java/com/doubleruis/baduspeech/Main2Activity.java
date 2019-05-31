@@ -6,35 +6,27 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 import com.baidu.speech.EventListener;
 import com.baidu.speech.EventManager;
 import com.baidu.speech.EventManagerFactory;
 import com.baidu.speech.asr.SpeechConstant;
-import com.doubleruis.baduspeech.entity.EnterRecordAudioEntity;
-import com.doubleruis.baduspeech.eventbus.EventBusConfig;
-import com.doubleruis.baduspeech.eventbus.MainThreadEvent;
+import com.doubleruis.baduspeech.listener.ChainRecogListener;
 import com.doubleruis.baduspeech.until.AudioRecordJumpUtil;
 import com.doubleruis.baduspeech.until.AutoCheck;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
+
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -42,7 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class MainActivity extends AppCompatActivity implements EventListener  {
+public class Main2Activity extends AppCompatActivity implements EventListener  {
     protected TextView txtLog;
     protected TextView txtResult;
     protected ImageView btn;
@@ -59,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
 
     protected boolean enableOffline = false; // 测试离线命令词，需要改成true
 
-
+    private ChainRecogListener chainRecogListener;
 
     /**
      * 基于SDK集成2.2 发送开始事件
@@ -81,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         // params.put(SpeechConstant.VAD_ENDPOINT_TIMEOUT, 0); // 长语音
         // params.put(SpeechConstant.IN_FILE, "res:///com/baidu/android/voicedemo/16k_test.pcm");
         // params.put(SpeechConstant.VAD, SpeechConstant.VAD_DNN);
-        //params.put(SpeechConstant.PID, 1537); // 中文输入法模型，有逗号
+        params.put(SpeechConstant.PID, 1537); // 中文输入法模型，有逗号
         // 请先使用如‘在线识别’界面测试和生成识别参数。 params同ActivityRecog类中myRecognizer.start(params);
         // 复制此段可以自动检测错误
         (new AutoCheck(getApplicationContext(), new Handler() {
@@ -153,12 +145,14 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         asr = EventManagerFactory.create(this, "asr");
         // 基于sdk集成1.3 注册自己的输出事件类
         asr.registerListener(this); //  EventListener 中 onEvent方法
+
+        chainRecogListener = new ChainRecogListener();
+
         btn.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
-                AudioRecordJumpUtil.startRecordAudio(MainActivity.this);
-                handler.sendEmptyMessage(1);
+                AudioRecordJumpUtil.startRecordAudio(Main2Activity.this);
             }
         });
         stopBtn.setOnClickListener(new View.OnClickListener() {
@@ -170,14 +164,6 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         });
         if (enableOffline) {
             loadOfflineEngine(); // 测试离线命令词请开启, 测试 ASR_OFFLINE_ENGINE_GRAMMER_FILE_PATH 参数时开启
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case 2:
-                break;
         }
     }
 
@@ -224,15 +210,8 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         }
         printLog(logTxt);
 
-        String voiceparam = "";
         if(!"".equals(result)){
             txtResult.setText(result);
-            if(result.length()>1){
-                voiceparam = result.substring(2,result.length()-2);
-            }
-            Intent i = new Intent(MainActivity.this,WebviewActivity.class);
-            i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-            startActivity(i);
         }
     }
 
@@ -272,10 +251,11 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
                     voiceparam = result.substring(2,result.length()-2);
                 }
                 if(!"".equals(result)){
-                    Intent i = new Intent(MainActivity.this,WebviewActivity.class);
-                    i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-                    startActivity(i);
+
                 }
+                Intent i = new Intent(Main2Activity.this,WebviewActivity.class);
+                i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
+                startActivity(i);
             }
         }
     };

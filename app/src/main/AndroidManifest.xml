@@ -5,9 +5,11 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
+        android:name=".until.CommonApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -22,15 +24,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".AudioRecordActivity"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|layoutDirection|screenLayout|locale"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <activity
+            android:name=".WebviewActivity"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
 
         <meta-data android:name="com.baidu.speech.APP_ID"
-            android:value="16241145" />
+            android:value="16398151" />
         <meta-data
             android:name="com.baidu.speech.API_KEY"
-            android:value="q15jfkeegu3M1K38BiYSOHf2" />
+            android:value="YWFeGI5gU7GwPRx4l8KYoV7C" />
         <meta-data
             android:name="com.baidu.speech.SECRET_KEY"
-            android:value="Nv6Q4f8UdOFIIS0KhxXsfkijGQl6UfES" />
+            android:value="xzxguYPiavuLaW7FGGiDSb5B4h8EygQL" />
         <service android:name="com.baidu.speech.VoiceRecognitionService" android:exported="false" />
 
     </application>
