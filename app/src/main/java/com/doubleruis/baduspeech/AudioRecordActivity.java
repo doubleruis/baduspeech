@@ -102,33 +102,29 @@ public class AudioRecordActivity extends FragmentActivity implements
     }
 
     @Override
-    public String onRecordStart() {
+    public void onRecordStart() {
         recordTotalTime = 0;
-        initTimer();
-        timer.schedule(timerTask,0,DEFAULT_MIN_TIME_UPDATE_TIME);
-        audioFileName = CommonApp.getContext().getExternalCacheDir()+ File.separator + createAudioName();
         mHorVoiceView.startRecord();
+        //initTimer();
         Intent intent =new Intent();
         intent.setAction("action.refreshFriend");
         sendBroadcast(intent);
-
-//        Intent intent2 = new Intent();
-//        setResult(Activity.RESULT_OK, intent2);
-        return audioFileName;
     }
 
     @Override
     public boolean onRecordStop() {
-        if(recordTotalTime >= minRecordTime){
-            timer.cancel();
-            onBackPressed();
-            //录制完成发送EventBus通知
-            Intent intent =new Intent();
-            intent.setAction("action.refreshEnd");
-            sendBroadcast(intent);
-        }else{
-            onRecordCancel();
-        }
+//        if(recordTotalTime >= minRecordTime){
+//
+//        }else{
+//            onRecordCancel();
+//        }
+        //录制完成发送EventBus通知
+        Intent intent =new Intent();
+        intent.setAction("action.refreshEnd");
+        sendBroadcast(intent);
+        timer.cancel();
+        onBackPressed();
+        updateCancelUi();
         return false;
     }
 
@@ -226,8 +222,8 @@ public class AudioRecordActivity extends FragmentActivity implements
         if(recordTotalTime >= maxRecordTime){
             recordAudioView.invokeStop();
         }else{
-            String string = String.format(" 倒计时 %s ", StringUtil.formatRecordTime(recordTotalTime,maxRecordTime));
-            mHorVoiceView.setText(string);
+            //String string = String.format(" 倒计时 %s ", StringUtil.formatRecordTime(recordTotalTime,maxRecordTime));
+            mHorVoiceView.setText("");
         }
     }
 

@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
 
     protected boolean enableOffline = false; // 测试离线命令词，需要改成true
 
-
+    private String voiceparam = "";
 
     /**
      * 基于SDK集成2.2 发送开始事件
@@ -224,15 +224,11 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         }
         printLog(logTxt);
 
-        String voiceparam = "";
         if(!"".equals(result)){
             txtResult.setText(result);
             if(result.length()>1){
                 voiceparam = result.substring(2,result.length()-2);
             }
-            Intent i = new Intent(MainActivity.this,WebviewActivity.class);
-            i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-            startActivity(i);
         }
     }
 
@@ -266,15 +262,12 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
             if (action.equals("action.refreshFriend")){//要执行的逻辑
                 handler.sendEmptyMessage(1);
             }else if(action.equals("action.refreshEnd")){
-                String voiceparam = "";
-                String result = txtResult.getText().toString();
-                if(result.length()>1){
-                    voiceparam = result.substring(2,result.length()-2);
-                }
-                if(!"".equals(result)){
+                if(!"".equals(voiceparam)){
                     Intent i = new Intent(MainActivity.this,WebviewActivity.class);
                     i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
                     startActivity(i);
+                    voiceparam = "";
+                    txtResult.setText("");
                 }
             }
         }

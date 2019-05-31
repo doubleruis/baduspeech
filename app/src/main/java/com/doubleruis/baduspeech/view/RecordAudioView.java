@@ -108,15 +108,11 @@ public class RecordAudioView extends AppCompatButton {
      */
     private void startRecordAudio() throws RuntimeException {
         boolean isPrepare = recordAudioListener.onRecordPrepare();
-        if(isPrepare){
-            String audioFileName = recordAudioListener.onRecordStart();
-            PPLog.d(TAG,"startRecordAudio() has prepared.");
-            //准备就绪开始录制
-            try{
-                audioRecordManager.init(audioFileName);
-                audioRecordManager.startRecord();
+        if (isPrepare) {
+            try {
                 isRecording = true;
-            }catch (Exception e){
+                recordAudioListener.onRecordStart();
+            } catch (Exception e) {
                 this.recordAudioListener.onRecordCancel();
             }
         }
@@ -152,7 +148,7 @@ public class RecordAudioView extends AppCompatButton {
 
     public interface IRecordAudioListener {
         boolean onRecordPrepare();
-        String onRecordStart();
+        void onRecordStart();
         boolean onRecordStop();
         boolean onRecordCancel();
         void onSlideTop();
