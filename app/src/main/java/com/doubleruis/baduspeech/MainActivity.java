@@ -158,7 +158,6 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
             @Override
             public void onClick(View v) {
                 AudioRecordJumpUtil.startRecordAudio(MainActivity.this);
-                handler.sendEmptyMessage(1);
             }
         });
         stopBtn.setOnClickListener(new View.OnClickListener() {
@@ -185,6 +184,14 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
     protected void onPause(){
         super.onPause();
         asr.send(SpeechConstant.ASR_CANCEL, "{}", null, 0, 0);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        asr.send(SpeechConstant.ASR_CANCEL, "{}", null, 0, 0);
+        txtResult.setText("");
+        voiceparam = "";
     }
 
     @Override
@@ -262,12 +269,12 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
             if (action.equals("action.refreshFriend")){//要执行的逻辑
                 handler.sendEmptyMessage(1);
             }else if(action.equals("action.refreshEnd")){
+                stop();
                 if(!"".equals(voiceparam)){
                     Intent i = new Intent(MainActivity.this,WebviewActivity.class);
                     i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
+                    //i.putExtra("url","http://192.168.8.102:8080/hfly_webapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
                     startActivity(i);
-                    voiceparam = "";
-                    txtResult.setText("");
                 }
             }
         }
