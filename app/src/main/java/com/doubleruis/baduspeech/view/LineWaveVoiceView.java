@@ -30,7 +30,8 @@ public class LineWaveVoiceView extends View {
     //矩形波纹宽度
     private float lineWidth;
     private float textSize;
-    private static final String DEFAULT_TEXT = " 倒计时 9:59 ";
+    //private static final String DEFAULT_TEXT = " 倒计时 9:59 ";
+    private static final String DEFAULT_TEXT = "";
     private String text = DEFAULT_TEXT;
     private int textColor;
     private boolean isStart = false;

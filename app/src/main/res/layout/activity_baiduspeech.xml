@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/record_content"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+    android:id="@+id/record_content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <!--android:background="#86000000"-->
     <RelativeLayout
@@ -87,10 +87,44 @@
         android:layout_above="@id/layout_record_audio"
         android:background="#e6e6e6"/>
 
-    <View
-        android:visibility="gone"
+    <RelativeLayout
         android:id="@+id/audio_empty_layout"
         android:layout_width="match_parent"
         android:layout_above="@id/layout_record_audio"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent">
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/txtResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                android:textSize="18dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#999" />
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                >
+
+                <ImageView
+                    android:id="@+id/btn"
+                    android:visibility="gone"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_centerHorizontal="true"
+                    android:src="@drawable/ar_item_sound"
+                    />
+            </RelativeLayout>
+        </LinearLayout>
+    </RelativeLayout>
 </RelativeLayout>

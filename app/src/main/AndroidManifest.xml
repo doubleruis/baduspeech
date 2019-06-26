@@ -17,7 +17,7 @@
         android:supportsRtl="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".BaiduSpeechActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -26,22 +26,19 @@
         </activity>
         <activity
             android:name=".AudioRecordActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|layoutDirection|screenLayout|locale"
-            android:screenOrientation="portrait"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
         <activity
             android:name=".WebviewActivity"
-            android:launchMode="singleInstance"
             android:theme="@style/Theme.AppCompat.NoActionBar"/>
 
         <meta-data android:name="com.baidu.speech.APP_ID"
-            android:value="16398151" />
+            android:value="16241145" />
         <meta-data
             android:name="com.baidu.speech.API_KEY"
-            android:value="YWFeGI5gU7GwPRx4l8KYoV7C" />
+            android:value="q15jfkeegu3M1K38BiYSOHf2" />
         <meta-data
             android:name="com.baidu.speech.SECRET_KEY"
-            android:value="xzxguYPiavuLaW7FGGiDSb5B4h8EygQL" />
+            android:value="Nv6Q4f8UdOFIIS0KhxXsfkijGQl6UfES" />
         <service android:name="com.baidu.speech.VoiceRecognitionService" android:exported="false" />
 
     </application>

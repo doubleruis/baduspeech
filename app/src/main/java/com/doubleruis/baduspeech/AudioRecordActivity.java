@@ -2,7 +2,10 @@ package com.doubleruis.baduspeech;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -81,12 +84,43 @@ public class AudioRecordActivity extends FragmentActivity implements
         emptyView.setOnClickListener(this);
         recordStatusDescription = new String[]{
                 getString(R.string.ar_feed_sound_press_record),
-                getString(R.string.ar_feed_sound_slide_cancel)
+                getString(R.string.ar_feed_sound_slide_cancel),
+                getString(R.string.ar_feed_sound_slide_null),
         };
         mainHandler = new Handler();
         Bundle bundle = getIntent().getBundleExtra(KEY_AUDIO_BUNDLE);
         entity = (EnterRecordAudioEntity) bundle.getSerializable(KEY_ENTER_RECORD_AUDIO_ENTITY);
+
+        initView();
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(mRefreshBroadcastReceiver!=null){
+            unregisterReceiver(mRefreshBroadcastReceiver);
+        }
+    }
+
+    public void initView(){
+        IntentFilter intentFilter =new IntentFilter();
+        intentFilter.addAction("action.refreshNull");
+        intentFilter.addAction("action.close");
+        registerReceiver(mRefreshBroadcastReceiver, intentFilter);
+    }
+
+    private BroadcastReceiver mRefreshBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals("action.refreshNull")){//要执行的逻辑
+                updateNullUi();
+            }else if(action.equals("action.close")){
+                finish();
+                overridePendingTransition(R.anim.pp_bottom_in, R.anim.pp_bottom_out);
+            }
+        }
+    };
 
     @Override
     public boolean onRecordPrepare() {
@@ -107,7 +141,7 @@ public class AudioRecordActivity extends FragmentActivity implements
         mHorVoiceView.startRecord();
         //initTimer();
         Intent intent =new Intent();
-        intent.setAction("action.refreshFriend");
+        intent.setAction("action.refreshStart");
         sendBroadcast(intent);
     }
 
@@ -141,6 +175,15 @@ public class AudioRecordActivity extends FragmentActivity implements
         tvRecordTips.setVisibility(View.VISIBLE);
         layoutCancelView.setVisibility(View.INVISIBLE);
         tvRecordTips.setText(recordStatusDescription[0]);
+        mHorVoiceView.stopRecord();
+        deleteTempFile();
+    }
+
+    private void updateNullUi(){
+        mHorVoiceView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setVisibility(View.VISIBLE);
+        layoutCancelView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setText(recordStatusDescription[2]);
         mHorVoiceView.stopRecord();
         deleteTempFile();
     }
@@ -192,7 +235,7 @@ public class AudioRecordActivity extends FragmentActivity implements
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.close_record){
-            onBackPressed();
+            //onBackPressed();
         }else if(v.getId() == R.id.audio_empty_layout){
             onBackPressed();
         }
@@ -232,6 +275,7 @@ public class AudioRecordActivity extends FragmentActivity implements
         finish();
         overridePendingTransition(R.anim.pp_bottom_in, R.anim.pp_bottom_out);
     }
+
 
     public String createAudioName(){
         long time = System.currentTimeMillis();

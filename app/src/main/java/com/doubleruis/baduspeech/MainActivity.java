@@ -1,20 +1,30 @@
 package com.doubleruis.baduspeech;
 
 import android.Manifest;
+import android.app.Dialog;
+import android.app.IntentService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -33,6 +43,8 @@ import com.doubleruis.baduspeech.eventbus.EventBusConfig;
 import com.doubleruis.baduspeech.eventbus.MainThreadEvent;
 import com.doubleruis.baduspeech.until.AudioRecordJumpUtil;
 import com.doubleruis.baduspeech.until.AutoCheck;
+import com.doubleruis.baduspeech.until.MyWebviews;
+
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.json.JSONObject;
@@ -43,23 +55,15 @@ import java.util.Map;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class MainActivity extends AppCompatActivity implements EventListener  {
-    protected TextView txtLog;
     protected TextView txtResult;
     protected ImageView btn;
-    protected Button stopBtn;
-    private static String DESC_TEXT = "精简版识别，带有SDK唤醒运行的最少代码，仅仅展示如何调用，\n" +
-            "也可以用来反馈测试SDK输入参数及输出回调。\n" +
-            "本示例需要自行根据文档填写参数，可以使用之前识别示例中的日志中的参数。\n" +
-            "需要完整版请参见之前的识别示例。\n" +
-            "需要测试离线命令词识别功能可以将本类中的enableOffline改成true，首次测试离线命令词请联网使用。之后请说出“打电话给张三”";
-
     private EventManager asr;
-
     private boolean logTime = true;
-
     protected boolean enableOffline = false; // 测试离线命令词，需要改成true
-
     private String voiceparam = "";
+    private boolean end = false;
+    private MyWebviews webview;
+    private Dialog dialog;
 
     /**
      * 基于SDK集成2.2 发送开始事件
@@ -67,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
      * 测试参数填在这里
      */
     private void start() {
-        txtLog.setText("");
         Map<String, Object> params = new LinkedHashMap<String, Object>();
         String event = null;
         event = SpeechConstant.ASR_START; // 替换成测试的event
@@ -90,9 +93,7 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
                     AutoCheck autoCheck = (AutoCheck) msg.obj;
                     synchronized (autoCheck) {
                         String message = autoCheck.obtainErrorMessage(); // autoCheck.obtainAllMessage();
-                        txtLog.append(message + "\n");
-                        ; // 可以用下面一行替代，在logcat中查看代码
-                        // Log.w("AutoCheckMessage", message);
+                        Log.w("AutoCheckMessage", message);
                     }
                 }
             }
@@ -137,7 +138,48 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case 1:
+                    end = false;
                     start();
+                    break;
+                case 2:
+                    stop();
+                    end = true;
+                    if(!"".equals(voiceparam)){
+                        Intent i = new Intent(MainActivity.this,WebviewActivity.class);
+                        //i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
+                        i.putExtra("url","https://www.baidu.com/");
+                        startActivity(i);
+                    }else{
+                        Intent intent =new Intent();
+                        intent.setAction("action.refreshNull");
+                        sendBroadcast(intent);
+                    }
+                    txtResult.setText("");
+                    voiceparam = "";
+                    break;
+                case 3:
+                    stop();
+                    end = true;
+                    if(!"".equals(voiceparam)){
+//                        Intent i = new Intent(MainActivity.this,WebviewActivity.class);
+//                        //i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
+//                        i.putExtra("url","https://www.baidu.com/");
+//                        startActivity(i);
+                        //关闭下方录音按钮
+//                        Intent intent =new Intent();
+//                        intent.setAction("action.close");
+//                        sendBroadcast(intent);
+                        handler.sendEmptyMessageDelayed(4,100);
+                    }else{
+                        Intent intent =new Intent();
+                        intent.setAction("action.refreshNull");
+                        sendBroadcast(intent);
+                    }
+                    txtResult.setText("");
+                    voiceparam = "";
+                    break;
+                case 4:
+                    showDialog();
                     break;
             }
         }
@@ -154,29 +196,13 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         // 基于sdk集成1.3 注册自己的输出事件类
         asr.registerListener(this); //  EventListener 中 onEvent方法
         btn.setOnClickListener(new View.OnClickListener() {
-
             @Override
             public void onClick(View v) {
-                AudioRecordJumpUtil.startRecordAudio(MainActivity.this);
-            }
-        });
-        stopBtn.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                stop();
+                //AudioRecordJumpUtil.startRecordAudio(MainActivity.this);
             }
         });
         if (enableOffline) {
             loadOfflineEngine(); // 测试离线命令词请开启, 测试 ASR_OFFLINE_ENGINE_GRAMMER_FILE_PATH 参数时开启
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case 2:
-                break;
         }
     }
 
@@ -231,11 +257,9 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         }
         printLog(logTxt);
 
-        if(!"".equals(result)){
-            txtResult.setText(result);
-            if(result.length()>1){
-                voiceparam = result.substring(2,result.length()-2);
-            }
+        if(!"".equals(result) && result.length()>1 && !end){
+            voiceparam = result.substring(2,result.length()-2);
+            txtResult.setText(voiceparam);
         }
     }
 
@@ -245,41 +269,103 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         }
         text += "\n";
         Log.i(getClass().getName(), text);
-        txtLog.append(text + "\n");
     }
 
     private void initView() {
         txtResult = (TextView) findViewById(R.id.txtResult);
-        txtLog = (TextView) findViewById(R.id.txtLog);
-        txtLog.setVisibility(View.GONE);
         btn = (ImageView) findViewById(R.id.btn);
-        stopBtn = (Button) findViewById(R.id.btn_stop);
-        txtLog.setText(DESC_TEXT + "\n");
 
         IntentFilter intentFilter =new IntentFilter();
-        intentFilter.addAction("action.refreshFriend");
+        intentFilter.addAction("action.refreshStart");
         intentFilter.addAction("action.refreshEnd");
         registerReceiver(mRefreshBroadcastReceiver, intentFilter);
+
+
+        IntentFilter intentFilter2 =new IntentFilter();
+        intentFilter2.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(NetworkReceiver, intentFilter2);
+
+        //AudioRecordJumpUtil.startRecordAudio(MainActivity.this);
+
+        showDialog();
+    }
+
+    private void WebSetting() {
+        webview.getSettings().setJavaScriptEnabled(true);
+        webview.getSettings().setLoadWithOverviewMode(false);
+        webview.getSettings().setDefaultTextEncodingName("utf-8");
+
+        webview.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE); // 不使用缓存，只从网络获取数据
+        //webview.addJavascriptInterface(new jsSystemExit(), "android");//添加供js调用接口，接口名为android
+
+        // 启用地理定位
+        webview.getSettings().setGeolocationEnabled(true);
+        // 设置定位的数据库路径
+        webview.getSettings().setSupportZoom(false);
+        webview.getSettings().setBuiltInZoomControls(false);
+        webview.bringToFront();
+        // 开启DOM storage API 功能
+        webview.getSettings().setDomStorageEnabled(true);
+        // 开启database storage API功能
+        webview.getSettings().setDatabaseEnabled(true);
+        webview.addJavascriptInterface(new jsSystemExit(), "android");//添加供js调用接口，接口名为android
+        webview.clearHistory();
+        MyWebviews.DisplayFinish df = new MyWebviews.DisplayFinish() {
+            @Override
+            public void After() {
+                webview.loadUrl("javascript:(function() { " +
+                        "var videos = document.getElementById('video');" +
+                        "videos.play();})()");
+            }
+        };
+        webview.setDf(df);
+    }
+
+    class jsSystemExit {
+        @JavascriptInterface
+        public void back(){
+            finish();
+        }
     }
 
     private BroadcastReceiver mRefreshBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (action.equals("action.refreshFriend")){//要执行的逻辑
+            if (action.equals("action.refreshStart")){//要执行的逻辑
                 handler.sendEmptyMessage(1);
             }else if(action.equals("action.refreshEnd")){
-                stop();
-                if(!"".equals(voiceparam)){
-                    Intent i = new Intent(MainActivity.this,WebviewActivity.class);
-                    i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-                    //i.putExtra("url","http://192.168.8.102:8080/hfly_webapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-                    startActivity(i);
-                }
+                //handler.sendEmptyMessage(2);
+                handler.sendEmptyMessage(3);
             }
         }
     };
 
+    private BroadcastReceiver NetworkReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(null==intent){
+                return;
+            }
+            ConnectivityManager connectivityManager = (ConnectivityManager)context.getApplicationContext()
+                    .getSystemService(CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            if(null==networkInfo||!networkInfo.isConnected()){
+                return;
+            }
+//            long currentTimeMillis = System.currentTimeMillis();
+//            if(currentTimeMillis- GlobalCacheManager.g)
+            Intent servicceIntent = new Intent(context,TestService.getClass());
+            context.startService(servicceIntent);
+        }
+    };
+
+    private IntentService TestService = new IntentService("TestService") {
+        @Override
+        protected void onHandleIntent(@Nullable Intent intent) {
+            Toast.makeText(MainActivity.this,"网络发生变化",Toast.LENGTH_LONG);
+        }
+    };
 
     /**
      * android 6.0 以上需要动态申请权限
@@ -313,4 +399,30 @@ public class MainActivity extends AppCompatActivity implements EventListener  {
         // 此处为android 6.0以上动态授权的回调，用户自行实现。
     }
 
+    /**
+     * 显示弹出框
+     */
+    private void showDialog() {
+        if(dialog == null)
+        initDialog();
+        dialog.show();
+    }
+
+    private void initDialog(){
+        dialog = new Dialog(MainActivity.this,R.style.dialog_center);
+//        dialog.setCancelable(true);
+//        dialog.setCanceledOnTouchOutside(true);
+        Window window = dialog.getWindow();
+        View view = View.inflate(this,R.layout.activity_dialog_webview,null);
+        webview = view.findViewById(R.id.webview);
+        WebSetting();
+        //String url = "http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam;
+        String url = "https://www.baidu.com/";
+        webview.loadUrl(url);
+
+        window.setGravity(Gravity.CENTER);
+        window.setContentView(view);
+        //window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);//设置横向全屏
+        //window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);//不遮挡背景事件
+    }
 }
