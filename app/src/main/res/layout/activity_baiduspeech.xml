@@ -12,6 +12,10 @@
         android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="200dp">
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#999" />
         <ImageView
             android:id="@+id/close_record"
             android:src="@drawable/ar_keyboard_btn"
@@ -60,6 +64,15 @@
             android:textSize="14dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/txtResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/iv_recording"
+            android:layout_marginTop="-50dp"
+            android:padding="8dp"
+            android:textSize="18dp" />
     </RelativeLayout>
 
     <LinearLayout
@@ -96,25 +109,25 @@
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/txtResult"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:textSize="18dp" />
-
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="#999" />
 
+            <!--<View-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--/>-->
+            <com.doubleruis.baduspeech.until.MyWebviews
+                android:id="@+id/webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#999" />
             <RelativeLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 >
-
                 <ImageView
                     android:id="@+id/btn"
                     android:visibility="gone"

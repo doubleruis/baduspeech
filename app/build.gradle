@@ -2,15 +2,18 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 27
+    buildToolsVersion '28.0.2'
+    useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "com.doubleruis.baduspeech"
+        multiDexEnabled true
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
-            abiFilters 'armeabi'
+            abiFilters 'armeabi','armeabi-v7a'
         }
         resConfigs "zh"
     }
@@ -20,6 +23,14 @@ android {
             proguardFiles 'proguard.cfg'
             shrinkResources true  // 移除无用的resource文件
         }
+    }
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
     }
     sourceSets {
         main {
@@ -39,6 +50,26 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation files('libs/fastjson-1.1.39.jar')
     implementation files('libs/fsdp2_android.jar')
+    implementation files('libs/fsdp2_common.jar')
     implementation files('libs/eventbus-3.0.0.jar')
     implementation files('libs/bdasr_V3_20180801_d6f298a.jar')
+    implementation files('libs/log4j-1.2.15.jar')
+    implementation files('libs/log4j-api-2.0-rc1.jar')
+    implementation files('libs/log4j-core-2.0-rc1.jar')
+
+    implementation files('libs/commons-httpclient-3.0.1.jar')
+    implementation files('libs/finedo.cp.jar')
+    implementation files('libs/sellstd_service_domain.jar')
+    implementation files('libs/fsdp2_service_domain.jar')
+    implementation files('libs/gson-2.3.1.jar')
+
+
+    implementation files('libs/WebtrendsAndroidClientLib.jar')
+    implementation files('libs/dom4j-1.6.1.jar')
+    implementation files('libs/arcgis-android-api.jar')
+    implementation files('libs/arcgis-android-app-toolkit.jar')
+    implementation files('libs/junit-4.12.jar')
+    implementation files('libs/BASE64.jar')
+    implementation files('libs/commons-io-2.4.jar')
+    implementation 'com.android.support:multidex:1.0.0'
 }

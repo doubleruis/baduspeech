@@ -1,3 +1,4 @@
 #生产地址
-ip=:
-port=
+service_ip=192.168.8.104
+port=8080
+project_name=monitor_webapp

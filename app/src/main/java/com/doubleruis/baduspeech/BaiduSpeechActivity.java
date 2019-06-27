@@ -2,13 +2,14 @@ package com.doubleruis.baduspeech;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.StrictMode;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -22,6 +23,7 @@ import android.webkit.WebSettings;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.alibaba.fastjson.JSON;
 import com.baidu.speech.EventListener;
@@ -29,10 +31,11 @@ import com.baidu.speech.EventManager;
 import com.baidu.speech.EventManagerFactory;
 import com.baidu.speech.asr.SpeechConstant;
 import com.doubleruis.baduspeech.entity.EnterRecordAudioEntity;
-import com.doubleruis.baduspeech.until.AudioRecordJumpUtil;
+import com.doubleruis.baduspeech.helper.HttpUtils;
 import com.doubleruis.baduspeech.until.AutoCheck;
 import com.doubleruis.baduspeech.until.Cons;
 import com.doubleruis.baduspeech.until.MyWebviews;
+import com.doubleruis.baduspeech.until.NetWorks;
 import com.doubleruis.baduspeech.until.PaoPaoTips;
 import com.doubleruis.baduspeech.until.PermissionUtil;
 import com.doubleruis.baduspeech.view.LineWaveVoiceView;
@@ -42,17 +45,22 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import cn.finedo.adcore.async.IAsyncObject;
+import cn.finedo.common.domain.ReturnValueDomain;
+import cn.finedo.common.non.NonUtil;
 
 /**
  * Created by dell
  * 2019/6/26
  */
 public class BaiduSpeechActivity extends AppCompatActivity implements EventListener,
-        RecordAudioView.IRecordAudioListener, View.OnClickListener{
+        RecordAudioView.IRecordAudioListener, View.OnClickListener, IAsyncObject {
     protected boolean enableOffline = false; // 测试离线命令词，需要改成true
     protected ImageView btn;
     private EventManager asr;
@@ -87,8 +95,10 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
     private LineWaveVoiceView mHorVoiceView;
     private View emptyView;
     private String url = "https://www.baidu.com/";//跳转路径
+    private ProgressDialog pd; // 等待窗口
+    private String message = "等待中";
 
-    private Handler handler = new Handler(){
+    private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -99,12 +109,12 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
                 case 2:
                     stop();
                     //end = true;
-                    if(!"".equals(voiceparam)){
-                        Intent i = new Intent(BaiduSpeechActivity.this,WebviewActivity.class);
+                    if (!"".equals(voiceparam)) {
+                        Intent i = new Intent(BaiduSpeechActivity.this, WebviewActivity.class);
                         //i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-                        i.putExtra("url","https://www.baidu.com/");
+                        i.putExtra("url", "https://www.baidu.com/");
                         startActivity(i);
-                    }else{
+                    } else {
                         updateNullUi();
                     }
                     txtResult.setText("");
@@ -113,24 +123,61 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
                 case 3:
                     stop();
                     //end = true;
-                    if(!"".equals(voiceparam)){
-//                        Intent i = new Intent(MainActivity.this,WebviewActivity.class);
-//                        //i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
-//                        i.putExtra("url","https://www.baidu.com/");
-//                        startActivity(i);
-                        handler.sendEmptyMessageDelayed(4,100);
-                    }else{
+                    if (!"".equals(voiceparam)) {
+                        updateTxtResult();
+                        String url = "http://192.168.8.104:8080/monitor_webapp/finedo/ai/matchpart";
+                        new MyAsyncTask().execute(url);
+                    } else {
                         updateNullUi();
                     }
                     txtResult.setText("");
                     voiceparam = "";
                     break;
                 case 4:
-                    showDialog();
+                    webview.loadUrl(msg.obj.toString());
+                    break;
+                case 5:
+                    Toast.makeText(BaiduSpeechActivity.this,"服务器出小差了呢～",Toast.LENGTH_LONG);
                     break;
             }
         }
     };
+
+    class MyAsyncTask extends AsyncTask<String,Void,String>{
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            showProcess();
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            hideProcess();
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+            String url = strings[0];
+            String returns = "";
+            Map<String,Object> map = new HashMap<String,Object>();
+            map.put("indexword",voiceparam);
+            String result = HttpUtils.dopost(url,map);
+            if(result!=null&&!result.equals("")){
+                if(!result.equals("1000")){
+                    returns = NetWorks.geturl(BaiduSpeechActivity.this)+result.substring(1,result.length()-1);
+                }else {
+                    handler.sendEmptyMessage(5);
+                    return returns;
+                }
+            }
+            Message message = new Message();
+            message.what = 4;
+            message.obj = returns;
+            handler.sendMessage(message);
+            return returns;
+        }
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -145,6 +192,39 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
         if (enableOffline) {
             loadOfflineEngine(); // 测试离线命令词请开启, 测试 ASR_OFFLINE_ENGINE_GRAMMER_FILE_PATH 参数时开启
         }
+
+        if (android.os.Build.VERSION.SDK_INT > 9) {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+        }
+    }
+
+    @Override
+    public Object call(Object... objects) {
+        return null;
+    }
+
+    @Override
+    public void callback(int requestCode, Object result) {
+        switch (requestCode) {
+            case 1000:// 获取亲情号码配置
+                getcallBack(result);// 获取亲情号码配置-回调
+                break;
+        }
+    }
+
+    public void getcallBack(Object result) {
+        ReturnValueDomain<String> ret = (ReturnValueDomain<String>) result;
+        if (ret == null) {
+            return;
+        }
+
+        if (!ret.getResultcode().equals("SUCCESS")) {
+            return;
+        }
+
+        if (ret.getObject() != null && !ret.getObject().equals(""))
+            webview.loadUrl(NetWorks.geturl(BaiduSpeechActivity.this)+ret.getObject());
     }
 
     // 基于sdk集成1.2 自定义输出事件类 EventListener 回调方法
@@ -156,7 +236,7 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
         if (params != null && !params.isEmpty()) {
             logTxt += " ;params :" + params;
             Map map = (Map) JSON.parse(params);
-            if(map.get("results_recognition") !=null && !"".equals(map.get("results_recognition")))
+            if (map.get("results_recognition") != null && !"".equals(map.get("results_recognition")))
                 result += map.get("results_recognition");
         }
         if (name.equals(SpeechConstant.CALLBACK_EVENT_ASR_PARTIAL)) {
@@ -169,8 +249,8 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
             logTxt += " ;data length=" + data.length;
         }
 
-        if(!"".equals(result) && result.length()>1){
-            voiceparam = result.substring(2,result.length()-2);
+        if (!"".equals(result) && result.length() > 1) {
+            voiceparam = result.substring(2, result.length() - 2);
             txtResult.setText(voiceparam);
             stop();
         }
@@ -179,7 +259,7 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
     @Override
     public boolean onRecordPrepare() {
         //检查录音权限
-        if(!PermissionUtil.hasSelfPermission(this, Manifest.permission.RECORD_AUDIO)) {
+        if (!PermissionUtil.hasSelfPermission(this, Manifest.permission.RECORD_AUDIO)) {
             String[] pp = new String[]{
                     Manifest.permission.RECORD_AUDIO
             };
@@ -199,12 +279,7 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
 
     @Override
     public boolean onRecordStop() {
-//        if(recordTotalTime >= minRecordTime){
-//
-//        }else{
-//            onRecordCancel();
-//        }
-        //录制完成发送EventBus通知
+        //录制完成
 //        //handler.sendEmptyMessage(2);
         handler.sendEmptyMessage(3);
         timer.cancel();
@@ -221,13 +296,14 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
 
     @Override
     public boolean onRecordCancel() {
-        if(timer != null){
+        if (timer != null) {
             timer.cancel();
         }
         updateCancelUi();
         return false;
     }
-    private void updateCancelUi(){
+
+    private void updateCancelUi() {
         mHorVoiceView.setVisibility(View.INVISIBLE);
         tvRecordTips.setVisibility(View.VISIBLE);
         layoutCancelView.setVisibility(View.INVISIBLE);
@@ -236,7 +312,16 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
         deleteTempFile();
     }
 
-    private void updateNullUi(){
+    private void updateTxtResult() {
+        mHorVoiceView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setVisibility(View.VISIBLE);
+        layoutCancelView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setText(voiceparam);
+        mHorVoiceView.stopRecord();
+        deleteTempFile();
+    }
+
+    private void updateNullUi() {
         mHorVoiceView.setVisibility(View.INVISIBLE);
         tvRecordTips.setVisibility(View.VISIBLE);
         layoutCancelView.setVisibility(View.INVISIBLE);
@@ -245,11 +330,11 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
         deleteTempFile();
     }
 
-    private void deleteTempFile(){
+    private void deleteTempFile() {
         //取消录制后删除文件
-        if(audioFileName != null){
+        if (audioFileName != null) {
             File tempFile = new File(audioFileName);
-            if(tempFile.exists()){
+            if (tempFile.exists()) {
                 tempFile.delete();
             }
         }
@@ -275,8 +360,8 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (permissions == null || permissions.length <=  0
-                || grantResults == null || grantResults.length <= 0){
+        if (permissions == null || permissions.length <= 0
+                || grantResults == null || grantResults.length <= 0) {
             return;
         }
         boolean isGranted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
@@ -291,9 +376,9 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
 
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.close_record){
+        if (v.getId() == R.id.close_record) {
             //onBackPressed();
-        }else if(v.getId() == R.id.audio_empty_layout){
+        } else if (v.getId() == R.id.audio_empty_layout) {
             onBackPressed();
         }
     }
@@ -332,6 +417,31 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
 //        entity = (EnterRecordAudioEntity) bundle.getSerializable(KEY_ENTER_RECORD_AUDIO_ENTITY);
 
         //showDialog();
+        webview = findViewById(R.id.webview);
+        WebSetting();
+
+        //handler.sendEmptyMessage(4);
+
+        pd = new ProgressDialog(BaiduSpeechActivity.this);
+    }
+
+    /**
+     * 打开等待窗口
+     */
+    public void showProcess() {
+        pd = new ProgressDialog(BaiduSpeechActivity.this);
+        pd.setCancelable(false);
+        pd.setMessage(message);
+        pd.show();
+    }
+
+    /**
+     * 关闭等待窗口
+     */
+    public void hideProcess() {
+        if (NonUtil.isNotNon(pd)){
+            pd.dismiss();
+        }
     }
 
     /**
@@ -393,7 +503,7 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
                     }
                 }
             }
-        },enableOffline)).checkAsr(params);
+        }, enableOffline)).checkAsr(params);
         String json = null; // 可以替换成自己的json
         json = new JSONObject(params).toString(); // 这里可以替换成你需要测试的json
         asr.send(event, json, null, 0, 0);
@@ -401,7 +511,7 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
 
     /**
      * 点击停止按钮
-     *  基于SDK集成4.1 发送停止事件
+     * 基于SDK集成4.1 发送停止事件
      */
     private void stop() {
         asr.send(SpeechConstant.ASR_STOP, null, null, 0, 0); //
@@ -411,20 +521,19 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
      * 显示弹出框
      */
     private void showDialog() {
-        if(dialog == null)
+        if (dialog == null)
             initDialog();
         dialog.show();
         webview.loadUrl(url);
     }
 
-    private void initDialog(){
-        dialog = new Dialog(BaiduSpeechActivity.this,R.style.dialog_center);
+    private void initDialog() {
+        dialog = new Dialog(BaiduSpeechActivity.this, R.style.dialog_center);
 //        dialog.setCancelable(true);
 //        dialog.setCanceledOnTouchOutside(true);
         Window window = dialog.getWindow();
-        View view = View.inflate(this,R.layout.activity_dialog_webview,null);
+        View view = View.inflate(this, R.layout.activity_dialog_webview, null);
         webview = view.findViewById(R.id.webview);
-        WebSetting();
         //url = "http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam;
         window.setGravity(Gravity.CENTER);
         window.setContentView(view);
