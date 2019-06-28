@@ -1,7 +1,6 @@
-package com.doubleruis.baduspeech.listener;
+package com.doubleruis.baduspeech.recog.listener;
 
-
-import com.doubleruis.baduspeech.until.RecogResult;
+import com.doubleruis.baduspeech.recog.RecogResult;
 
 /**
  * 与SDK中回调参数的对应关系定义在RecogEventAdapter类中

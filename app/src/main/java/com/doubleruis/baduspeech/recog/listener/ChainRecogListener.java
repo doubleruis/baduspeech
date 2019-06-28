@@ -1,7 +1,7 @@
-package com.doubleruis.baduspeech.listener;
+package com.doubleruis.baduspeech.recog.listener;
 
 
-import com.doubleruis.baduspeech.until.RecogResult;
+import com.doubleruis.baduspeech.recog.RecogResult;
 
 import java.util.ArrayList;
 
