@@ -13,12 +13,18 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.baidu.speech.asr.SpeechConstant;
 import com.doubleruis.baduspeech.helper.HttpUtils;
 import com.doubleruis.baduspeech.params.OfflineRecogParams;
@@ -51,58 +57,137 @@ import static com.doubleruis.baduspeech.recog.IStatus.STATUS_FINISHED_ERROR;
  * Created by dell
  * 2019/6/27
  */
-public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
+@SuppressWarnings("all")
+public class BaiduSpeechOnlineActivity2 extends AppCompatActivity implements
         RecordAudioView.IRecordAudioListener, View.OnClickListener, IAsyncObject {
     protected boolean enableOffline = false; // 测试离线命令词，需要改成true
-    protected ImageView btn;
-    protected TextView txtResult;
+
     private String voiceparam = "";
     private MyWebviews webview;
+    private Button start;
+    private Button end;
 
     private static final String TAG = "AudioRecordActivity";
 
-    private RecordAudioView recordAudioView;
+
     private String audioFileName;
-    private ImageView ivClose;
-    private TextView tvRecordTips;
-    private LinearLayout layoutCancelView;
-    private String[] recordStatusDescription;
-    private LineWaveVoiceView mHorVoiceView;
-    private View emptyView;
+    private String url = "https://www.baidu.com/";//跳转路径
     private ProgressDialog pd; // 等待窗口
     private String message = "等待中";
-    private boolean end = false;
+
+    /**语音识别相关**/
+    private RecordAudioView recordAudioView;
+    private LineWaveVoiceView mHorVoiceView;
+    private TextView tvRecordTips;
+    private String[] recordStatusDescription;
+    private LinearLayout layoutCancelView;
+    protected MyRecognizer myRecognizer;//识别控制器，使用MyRecognizer控制识别的流程
+    private PopupWindow popupWindow;
+
+    public void inintVoice(){
+        LayoutInflater layoutInflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view = layoutInflater.inflate(R.layout.window_speech,null);
+        popupWindow = new PopupWindow(view,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT);
+        recordAudioView = view.findViewById(R.id.iv_recording);
+        recordAudioView.setRecordAudioListener(this);
+        mHorVoiceView = view.findViewById(R.id.horvoiceview);
+        tvRecordTips = view.findViewById(R.id.record_tips);
+        layoutCancelView = view.findViewById(R.id.pp_layout_cancel);
+        recordStatusDescription = new String[]{
+                getString(R.string.ar_feed_sound_press_record),
+                getString(R.string.ar_feed_sound_slide_cancel)
+        };
+
+        if (!popupWindow.isShowing()) {
+            popupWindow.showAtLocation(findViewById(R.id.record_content),
+                    Gravity.BOTTOM, 0, 0); // 设置在屏幕中的位置
+        }
+    }
+
+    @Override
+    public void onRecordStart() {
+
+    }
+
+    @Override
+    public boolean onRecordStop() {
+        updateCancelUi();
+        return false;
+    }
+
+    @Override
+    public boolean onRecordCancel() {
+        updateCancelUi();
+        return false;
+    }
+
     /**
-     * 识别控制器，使用MyRecognizer控制识别的流程
+     * 上划取消
      */
-    protected MyRecognizer myRecognizer;
+    @Override
+    public void onSlideTop() {
+        mHorVoiceView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setVisibility(View.INVISIBLE);
+        layoutCancelView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onFingerPress() {
+        mHorVoiceView.setVisibility(View.VISIBLE);
+        tvRecordTips.setVisibility(View.VISIBLE);
+        tvRecordTips.setText(recordStatusDescription[1]);
+        layoutCancelView.setVisibility(View.INVISIBLE);
+        start();
+    }
+
+    private void updateCancelUi() {
+        mHorVoiceView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setVisibility(View.VISIBLE);
+        layoutCancelView.setVisibility(View.INVISIBLE);
+        tvRecordTips.setText(recordStatusDescription[0]);
+        mHorVoiceView.stopRecord();
+
+        deleteTempFile();
+    }
+
+    /**
+     * 开始录音后，手动点击“停止”按钮。
+     * SDK会识别不会再识别停止后的录音。
+     * 基于DEMO集成4.1 发送停止事件 停止录音
+     */
+    protected void stop() {
+        myRecognizer.stop();
+    }
+    /**语音识别相关 end**/
 
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case 1:
-                    end = false;
-                    start();
-                    txtResult.setText("");
+                    //end = false;
+                    //start();
+                    inintVoice();
                     voiceparam = "";
                     break;
                 case 2:
                     stop();
-                    end = true;
+                    //end = true;
                     if (!"".equals(voiceparam)) {
-                        Intent i = new Intent(BaiduSpeechOnlineActivity.this, WebviewActivity.class);
+                        Intent i = new Intent(BaiduSpeechOnlineActivity2.this, WebviewActivity.class);
                         //i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
                         i.putExtra("url", "https://www.baidu.com/");
                         startActivity(i);
                     } else {
                         updateNullUi();
                     }
-                    txtResult.setText("");
                     voiceparam = "";
                     break;
                 case 3:
-                    end = true;
+                    stop();
+                    //end = true;
                     if (!"".equals(voiceparam)) {
                         updateTxtResult();
                         //String url = "http://192.168.8.104:8080/monitor_webapp/finedo/ai/matchpart";
@@ -114,11 +199,10 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
                     break;
                 case 4:
                     webview.loadUrl(msg.obj.toString());
-                    txtResult.setText("");
                     voiceparam = "";
                     break;
                 case 5:
-                    Toast.makeText(BaiduSpeechOnlineActivity.this,"服务器出小差了呢～",Toast.LENGTH_LONG);
+                    Toast.makeText(BaiduSpeechOnlineActivity2.this,"服务器出小差了呢～",Toast.LENGTH_LONG);
                     break;
             }
         }
@@ -159,7 +243,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
             String result = HttpUtils.dopost(url,map);
             if(result!=null&&!result.equals("")){
                 if(!result.equals("1000")){
-                    returns = NetWorks.geturl(BaiduSpeechOnlineActivity.this)+result.substring(1,result.length()-1);
+                    returns = NetWorks.geturl(BaiduSpeechOnlineActivity2.this)+result.substring(1,result.length()-1);
                 }else {
                     handler.sendEmptyMessage(5);
                     return returns;
@@ -176,7 +260,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_baiduspeech);
+        setContentView(R.layout.activity_test);
         initView();
         initPermission();
         // 基于DEMO集成第1.1, 1.2, 1.3 步骤 初始化EventManager类并注册自定义输出事件
@@ -225,27 +309,21 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
         }
 
         if (ret.getObject() != null && !ret.getObject().equals(""))
-            webview.loadUrl(NetWorks.geturl(BaiduSpeechOnlineActivity.this)+ret.getObject());
+            webview.loadUrl(NetWorks.geturl(BaiduSpeechOnlineActivity2.this)+ret.getObject());
     }
 
     protected void handleMsg(Message msg) {
         switch (msg.what) { // 处理MessageStatusRecogListener中的状态回调
             case STATUS_FINISHED_ERROR:
                 if (msg.arg2 == 1) {
-                    txtResult.setText(msg.obj.toString());
-                    mHorVoiceView.setVisibility(View.INVISIBLE);
-                    mHorVoiceView.stopRecord();
+
                 }
                 break;
             case STATUS_FINISHED:
                 if (msg.arg2 == 1) {
-                    txtResult.setText(msg.obj.toString());
+
                     voiceparam = msg.obj.toString();
-                    tvRecordTips.setVisibility(View.VISIBLE);
-                    tvRecordTips.setText(voiceparam);
-                    if(end){
-                        handler.sendEmptyMessage(3);
-                    }
+                    handler.sendEmptyMessage(3);
                 }
                 break;
         }
@@ -264,28 +342,16 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
         return true;
     }
 
-    @Override
-    public void onRecordStart() {
-        mHorVoiceView.startRecord();
-        //initTimer();
-        //handler.sendEmptyMessage(1);
-        end = false;
-        stop();
-        start();
-        txtResult.setText("");
-        voiceparam = "";
-    }
-
-    @Override
-    public boolean onRecordStop() {
-        //录制完成
-//        //handler.sendEmptyMessage(2);
-        handler.sendEmptyMessage(3);
-        //handler.sendEmptyMessageDelayed(3,1000);
-        onBackPressed();
-        updateCancelUi();
-        return false;
-    }
+//    @Override
+//    public boolean onRecordStop() {
+//        //录制完成
+////        //handler.sendEmptyMessage(2);
+//        //handler.sendEmptyMessage(3);
+//        handler.sendEmptyMessageDelayed(3,1000);
+//        onBackPressed();
+//        updateCancelUi();
+//        return false;
+//    }
 
     @Override
     public void onBackPressed() {
@@ -293,36 +359,13 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
 //        overridePendingTransition(R.anim.pp_bottom_in, R.anim.pp_bottom_out);
     }
 
-    @Override
-    public boolean onRecordCancel() {
-        updateCancelUi();
-        return false;
-    }
-
-    private void updateCancelUi() {
-        //mHorVoiceView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setVisibility(View.VISIBLE);
-        layoutCancelView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setText(recordStatusDescription[0]);
-        //mHorVoiceView.stopRecord();
-        deleteTempFile();
-    }
-
     private void updateTxtResult() {
-        mHorVoiceView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setVisibility(View.VISIBLE);
-        layoutCancelView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setText(voiceparam);
-        mHorVoiceView.stopRecord();
+
         deleteTempFile();
     }
 
     private void updateNullUi() {
-        //mHorVoiceView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setVisibility(View.VISIBLE);
-        layoutCancelView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setText(recordStatusDescription[2]);
-        //mHorVoiceView.stopRecord();
+
         deleteTempFile();
     }
 
@@ -334,24 +377,6 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
                 tempFile.delete();
             }
         }
-    }
-
-    /**
-     * 上划取消
-     */
-    @Override
-    public void onSlideTop() {
-        mHorVoiceView.setVisibility(View.INVISIBLE);
-        tvRecordTips.setVisibility(View.INVISIBLE);
-        layoutCancelView.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void onFingerPress() {
-        mHorVoiceView.setVisibility(View.VISIBLE);
-        tvRecordTips.setVisibility(View.VISIBLE);
-        tvRecordTips.setText(recordStatusDescription[1]);
-        layoutCancelView.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -380,41 +405,24 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
     }
 
     private void initView() {
-        txtResult = (TextView) findViewById(R.id.txtResult);
-        btn = (ImageView) findViewById(R.id.btn);
-        btn.setOnClickListener(new View.OnClickListener() {
+        webview = findViewById(R.id.webview);
+        start = findViewById(R.id.start);
+        start.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                start();
+            public void onClick(View view) {
+                handler.sendEmptyMessage(1);
             }
         });
-
-        recordAudioView = (RecordAudioView) findViewById(R.id.iv_recording);
-        recordAudioView.setRecordAudioListener(this);
-        ivClose = (ImageView) findViewById(R.id.close_record);
-        ivClose.setOnClickListener(this);
-        tvRecordTips = (TextView) findViewById(R.id.record_tips);
-        layoutCancelView = (LinearLayout) findViewById(R.id.pp_layout_cancel);
-        mHorVoiceView = (LineWaveVoiceView) findViewById(R.id.horvoiceview);
-        emptyView = findViewById(R.id.audio_empty_layout);
-        emptyView.setOnClickListener(this);
-        recordStatusDescription = new String[]{
-                getString(R.string.ar_feed_sound_press_record),
-                getString(R.string.ar_feed_sound_slide_cancel),
-                //getString(R.string.ar_feed_sound_slide_null),
-                getString(R.string.ar_feed_sound_press_record)
-        };
-
-        webview = findViewById(R.id.webview);
+        end = findViewById(R.id.end);
         WebSetting();
-        pd = new ProgressDialog(BaiduSpeechOnlineActivity.this);
+        pd = new ProgressDialog(BaiduSpeechOnlineActivity2.this);
     }
 
     /**
      * 打开等待窗口
      */
     public void showProcess() {
-        pd = new ProgressDialog(BaiduSpeechOnlineActivity.this);
+        pd = new ProgressDialog(BaiduSpeechOnlineActivity2.this);
         pd.setCancelable(false);
         pd.setMessage(message);
         pd.show();
@@ -502,9 +510,9 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
      * SDK会识别不会再识别停止后的录音。
      * 基于DEMO集成4.1 发送停止事件 停止录音
      */
-    protected void stop() {
-        myRecognizer.stop();
-    }
+//    protected void stop() {
+//        myRecognizer.stop();
+//    }
 
     private void WebSetting() {
         webview.getSettings().setJavaScriptEnabled(true);

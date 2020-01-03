@@ -192,7 +192,7 @@ public class NetWorks {
 		String wsaddr = "http://"
 				+ FileStream
 				.loadConfig(context, "Connection", "service_ip")
-				+ ":"
+				//+ ":"
 				+ FileStream.loadConfig(context, "Connection", "port")
 				+ "/"
 				+ FileStream.loadConfig(context, "Connection",

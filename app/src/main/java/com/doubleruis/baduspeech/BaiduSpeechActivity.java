@@ -125,7 +125,8 @@ public class BaiduSpeechActivity extends AppCompatActivity implements EventListe
                     //end = true;
                     if (!"".equals(voiceparam)) {
                         updateTxtResult();
-                        String url = "http://192.168.8.104:8080/monitor_webapp/finedo/ai/matchpart";
+                        //String url = "http://192.168.8.104:8080/monitor_webapp/finedo/ai/matchpart";
+                        String url = "http://wx.hefeimobile.cn/hfydwt-fd-monitorwebapp/finedo/ai/matchpart";
                         new MyAsyncTask().execute(url);
                     } else {
                         updateNullUi();

@@ -19,6 +19,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.baidu.speech.asr.SpeechConstant;
 import com.doubleruis.baduspeech.helper.HttpUtils;
 import com.doubleruis.baduspeech.params.OfflineRecogParams;
@@ -51,15 +52,14 @@ import static com.doubleruis.baduspeech.recog.IStatus.STATUS_FINISHED_ERROR;
  * Created by dell
  * 2019/6/27
  */
-public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
+@SuppressWarnings("all")
+public class SpeechActivity extends AppCompatActivity implements
         RecordAudioView.IRecordAudioListener, View.OnClickListener, IAsyncObject {
     protected boolean enableOffline = false; // 测试离线命令词，需要改成true
     protected ImageView btn;
     protected TextView txtResult;
     private String voiceparam = "";
     private MyWebviews webview;
-
-    private static final String TAG = "AudioRecordActivity";
 
     private RecordAudioView recordAudioView;
     private String audioFileName;
@@ -91,7 +91,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
                     stop();
                     end = true;
                     if (!"".equals(voiceparam)) {
-                        Intent i = new Intent(BaiduSpeechOnlineActivity.this, WebviewActivity.class);
+                        Intent i = new Intent(SpeechActivity.this, WebviewActivity.class);
                         //i.putExtra("url","http://wx.hefeimobile.cn/hfydwt-fd-hflywebapp/app/homepage/textai.jsp?voiceparam="+voiceparam);
                         i.putExtra("url", "https://www.baidu.com/");
                         startActivity(i);
@@ -118,7 +118,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
                     voiceparam = "";
                     break;
                 case 5:
-                    Toast.makeText(BaiduSpeechOnlineActivity.this,"服务器出小差了呢～",Toast.LENGTH_LONG);
+                    Toast.makeText(SpeechActivity.this,"服务器出小差了呢～",Toast.LENGTH_LONG);
                     break;
             }
         }
@@ -159,7 +159,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
             String result = HttpUtils.dopost(url,map);
             if(result!=null&&!result.equals("")){
                 if(!result.equals("1000")){
-                    returns = NetWorks.geturl(BaiduSpeechOnlineActivity.this)+result.substring(1,result.length()-1);
+                    returns = NetWorks.geturl(SpeechActivity.this)+result.substring(1,result.length()-1);
                 }else {
                     handler.sendEmptyMessage(5);
                     return returns;
@@ -176,7 +176,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_baiduspeech);
+        setContentView(R.layout.activity_speech);
         initView();
         initPermission();
         // 基于DEMO集成第1.1, 1.2, 1.3 步骤 初始化EventManager类并注册自定义输出事件
@@ -225,7 +225,7 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
         }
 
         if (ret.getObject() != null && !ret.getObject().equals(""))
-            webview.loadUrl(NetWorks.geturl(BaiduSpeechOnlineActivity.this)+ret.getObject());
+            webview.loadUrl(NetWorks.geturl(SpeechActivity.this)+ret.getObject());
     }
 
     protected void handleMsg(Message msg) {
@@ -407,14 +407,14 @@ public class BaiduSpeechOnlineActivity extends AppCompatActivity implements
 
         webview = findViewById(R.id.webview);
         WebSetting();
-        pd = new ProgressDialog(BaiduSpeechOnlineActivity.this);
+        pd = new ProgressDialog(SpeechActivity.this);
     }
 
     /**
      * 打开等待窗口
      */
     public void showProcess() {
-        pd = new ProgressDialog(BaiduSpeechOnlineActivity.this);
+        pd = new ProgressDialog(SpeechActivity.this);
         pd.setCancelable(false);
         pd.setMessage(message);
         pd.show();
