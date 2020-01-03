@@ -1,1 +1,1 @@
-include ':app', ':baiduspeech'
+include ':app', ':voice'
