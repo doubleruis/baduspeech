@@ -10,7 +10,7 @@
  <!--测试环境-->
     <!--<servicecaller defaulturl="http://120.210.238.139:8080/esop_web/">-->
           <!--<server url="http://120.210.238.139:8080/esop_web/">-->
-              <!--<serviceap name="/finedo/loginc/getloginc"/>-->
+              <!--<serviceap name="/doubleruis/loginc/getloginc"/>-->
           <!--</server>-->
     <!--</servicecaller>-->
 
@@ -18,14 +18,14 @@
     <!-- 本地环境  -->
     <!--<servicecaller defaulturl="http://192.168.1.63:8080/esop_web/">-->
         <!--<server url="http://192.168.1.63:8080/esop_web/">-->
-            <!--<serviceap name="/finedo/loginc/getloginc"/>-->
+            <!--<serviceap name="/doubleruis/loginc/getloginc"/>-->
         <!--</server>-->
     <!--</servicecaller>-->
 
 <!-- 本地环境  -->
     <!--<servicecaller defaulturl="http://192.168.1.207:8080/esop_web/">-->
         <!--<server url="http://192.168.1.207:8080/esop_web/">-->
-            <!--<serviceap name="/finedo/loginc/getloginc"/>-->
+            <!--<serviceap name="/doubleruis/loginc/getloginc"/>-->
         <!--</server>-->
     <!--</servicecaller>-->
 

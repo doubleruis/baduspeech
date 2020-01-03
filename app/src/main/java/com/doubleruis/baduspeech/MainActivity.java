@@ -1,4 +1,4 @@
-package com.finedo.voice;
+package com.doubleruis.baduspeech;
 
 import android.app.Activity;
 import android.os.Bundle;
