@@ -1,6 +1,16 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.novoda.bintray-release'
 group='com.github.doubleruis'
+
+publish {
+    userOrg = 'doublerui'                        //bintray.com用户名
+    groupId = 'com.doublerui'                    //jcenter上的路径
+    artifactId = 'baiduspeech'              //项目名称
+    publishVersion = '1.0.0'                //版本号
+    desc = '语音识别'
+    website = 'https://github.com'
+}
 
 android {
     compileSdkVersion 28
@@ -10,7 +20,7 @@ android {
         versionCode 1
         versionName "1.0"
         ndk {
-            abiFilters 'armeabi','armeabi-v7a'
+            abiFilters 'armeabi'
         }
         resConfigs "zh"
     }
@@ -35,6 +45,9 @@ android {
             jni.srcDirs = []//设置禁止gradle生成Android.mk
             jniLibs.srcDirs = ['src/main/jniLibs']//设置目标的so存放路径
         }
+    }
+    lintOptions {
+        abortOnError false
     }
 }
 
